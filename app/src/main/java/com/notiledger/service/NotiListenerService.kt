@@ -59,6 +59,11 @@ class NotiListenerService : NotificationListenerService() {
                 val content = bigText ?: text
                 if (content.isBlank() && title.isBlank()) return@launch
 
+                // 금융 키워드 필터: 관련 문구 없으면 무시
+                val combined = "$title $content"
+                val financeKeywords = listOf("승인", "출금", "입금", "결제", "이체")
+                if (financeKeywords.none { combined.contains(it) }) return@launch
+
                 // 앱 이름 가져오기
                 val appName = try {
                     val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
