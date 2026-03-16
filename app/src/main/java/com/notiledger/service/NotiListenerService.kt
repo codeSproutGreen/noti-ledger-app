@@ -7,6 +7,7 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.notiledger.NotiLedgerApp
 import com.notiledger.data.model.NotiRecord
+import com.notiledger.util.FinanceApps
 import com.notiledger.webhook.WebhookSender
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -39,6 +40,9 @@ class NotiListenerService : NotificationListenerService() {
                 // 알림 수집이 꺼져있으면 무시
                 val collectEnabled = settings.collectNotifications.first()
                 if (!collectEnabled) return@launch
+
+                // 금융앱이 아니면 무시 (기타앱 차단)
+                if (!FinanceApps.isFinanceApp(sbn.packageName)) return@launch
 
                 // 앱 필터 확인
                 val isEnabled = repository.isAppEnabled(sbn.packageName)
@@ -101,7 +105,8 @@ class NotiListenerService : NotificationListenerService() {
             if (url.isBlank()) return
 
             val secret = settings.webhookSecret.first()
-            val success = WebhookSender.send(url, record, secret)
+            val deviceName = settings.deviceName.first()
+            val success = WebhookSender.send(url, record, secret, deviceName)
 
             if (success) {
                 repository.markWebhookSent(record.id)

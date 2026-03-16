@@ -43,6 +43,9 @@ interface NotiRecordDao {
     @Query("SELECT COUNT(*) FROM noti_records")
     suspend fun getCount(): Int
 
+    @Query("SELECT * FROM noti_records WHERE webhookSent = 0 ORDER BY timestamp DESC")
+    fun getUnsentRecords(): Flow<List<NotiRecord>>
+
     @Query("SELECT COUNT(*) FROM noti_records WHERE isRead = 0")
     fun getUnreadCount(): Flow<Int>
 

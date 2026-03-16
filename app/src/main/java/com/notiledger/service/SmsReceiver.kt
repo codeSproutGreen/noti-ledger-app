@@ -28,6 +28,8 @@ class SmsReceiver : BroadcastReceiver() {
         // 같은 발신자의 메시지 조합 (긴 SMS는 여러 파트로 옴)
         val grouped = messages.groupBy { it.originatingAddress ?: "unknown" }
 
+        val pendingResult = goAsync()
+
         CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
                 val collectSms = app.settingsRepository.collectSms.first()
@@ -42,6 +44,9 @@ class SmsReceiver : BroadcastReceiver() {
 
                     // 인증번호만 필터링 모드
                     if (authOnly && !isAuthMessage(fullBody)) continue
+
+                    // 금융 SMS 필터: "승인" 문구 없으면 무시
+                    if (!isFinanceSms(fullBody)) continue
 
                     val record = NotiRecord(
                         type = "SMS",
@@ -61,8 +66,15 @@ class SmsReceiver : BroadcastReceiver() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing SMS", e)
+            } finally {
+                pendingResult.finish()
             }
         }
+    }
+
+    private fun isFinanceSms(body: String): Boolean {
+        val keywords = listOf("승인", "출금", "입금", "결제", "이체")
+        return keywords.any { body.contains(it) }
     }
 
     private fun isAuthMessage(body: String): Boolean {
@@ -78,13 +90,18 @@ class SmsReceiver : BroadcastReceiver() {
     private suspend fun sendWebhook(app: NotiLedgerApp, record: NotiRecord) {
         try {
             val webhookEnabled = app.settingsRepository.webhookEnabled.first()
+            Log.d(TAG, "Webhook enabled: $webhookEnabled")
             if (!webhookEnabled) return
 
             val url = app.settingsRepository.webhookUrl.first()
+            Log.d(TAG, "Webhook URL: $url")
             if (url.isBlank()) return
 
             val secret = app.settingsRepository.webhookSecret.first()
-            val success = WebhookSender.send(url, record, secret)
+            val deviceName = app.settingsRepository.deviceName.first()
+            Log.d(TAG, "Sending webhook for record id=${record.id}")
+            val success = WebhookSender.send(url, record, secret, deviceName)
+            Log.d(TAG, "Webhook result: $success")
 
             if (success) {
                 app.repository.markWebhookSent(record.id)

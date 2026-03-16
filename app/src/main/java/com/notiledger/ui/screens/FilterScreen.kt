@@ -1,10 +1,13 @@
 package com.notiledger.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +24,7 @@ import com.notiledger.util.FinanceApps
 @Composable
 fun FilterScreen(viewModel: MainViewModel) {
     val filters by viewModel.appFilters.collectAsState()
+    var filterToDelete by remember { mutableStateOf<String?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -32,6 +36,11 @@ fun FilterScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            },
+            actions = {
+                IconButton(onClick = { viewModel.addFilterPresets() }) {
+                    Icon(Icons.Outlined.AddCircle, contentDescription = "프리셋 추가")
                 }
             }
         )
@@ -92,7 +101,8 @@ fun FilterScreen(viewModel: MainViewModel) {
                             isEnabled = filter.isEnabled,
                             lastSeen = filter.lastSeen,
                             isFinance = true,
-                            onToggle = { viewModel.setAppEnabled(filter.packageName, it) }
+                            onToggle = { viewModel.setAppEnabled(filter.packageName, it) },
+                            onLongClick = { filterToDelete = filter.packageName }
                         )
                     }
                 }
@@ -114,15 +124,40 @@ fun FilterScreen(viewModel: MainViewModel) {
                             isEnabled = filter.isEnabled,
                             lastSeen = filter.lastSeen,
                             isFinance = false,
-                            onToggle = { viewModel.setAppEnabled(filter.packageName, it) }
+                            onToggle = { viewModel.setAppEnabled(filter.packageName, it) },
+                            onLongClick = { filterToDelete = filter.packageName }
                         )
                     }
                 }
             }
         }
     }
+
+    // 삭제 확인 다이얼로그
+    filterToDelete?.let { pkg ->
+        val name = filters.find { it.packageName == pkg }?.appName ?: pkg
+        AlertDialog(
+            onDismissRequest = { filterToDelete = null },
+            title = { Text("필터 삭제") },
+            text = { Text("\"${name}\"을(를) 필터 목록에서 삭제하시겠습니까?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteFilter(pkg)
+                    filterToDelete = null
+                }) {
+                    Text("삭제", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { filterToDelete = null }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FilterCard(
     appName: String,
@@ -130,9 +165,14 @@ fun FilterCard(
     isEnabled: Boolean,
     lastSeen: Long,
     isFinance: Boolean,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     Card(
+        modifier = Modifier.combinedClickable(
+            onClick = {},
+            onLongClick = onLongClick
+        ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

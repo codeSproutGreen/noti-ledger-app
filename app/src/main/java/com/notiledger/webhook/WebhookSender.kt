@@ -28,10 +28,11 @@ object WebhookSender {
     suspend fun send(
         url: String,
         record: NotiRecord,
-        secret: String = ""
+        secret: String = "",
+        deviceName: String = ""
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val payload = mapOf(
+            val payload = mutableMapOf<String, Any>(
                 "id" to record.id,
                 "type" to record.type,
                 "source" to record.source,
@@ -40,6 +41,9 @@ object WebhookSender {
                 "content" to record.content,
                 "timestamp" to record.timestamp
             )
+            if (deviceName.isNotBlank()) {
+                payload["deviceName"] = deviceName
+            }
 
             val jsonBody = gson.toJson(payload)
             val requestBody = jsonBody.toRequestBody(jsonMediaType)
@@ -75,8 +79,12 @@ object WebhookSender {
         withContext(Dispatchers.IO) {
             try {
                 val testPayload = mapOf(
+                    "id" to 0,
                     "type" to "TEST",
-                    "message" to "NotiLedger 웹훅 연결 테스트",
+                    "source" to "com.notiledger",
+                    "sourceName" to "NotiLedger",
+                    "title" to "연결 테스트",
+                    "content" to "NotiLedger 웹훅 연결 테스트",
                     "timestamp" to System.currentTimeMillis()
                 )
 

@@ -16,6 +16,7 @@ class NotiRepository(
     fun getRecordsBySource(source: String): Flow<List<NotiRecord>> = recordDao.getRecordsBySource(source)
     fun searchRecords(query: String): Flow<List<NotiRecord>> = recordDao.searchRecords(query)
     fun getRecordsByDateRange(from: Long, to: Long): Flow<List<NotiRecord>> = recordDao.getRecordsByDateRange(from, to)
+    fun getUnsentRecords(): Flow<List<NotiRecord>> = recordDao.getUnsentRecords()
     fun getUnreadCount(): Flow<Int> = recordDao.getUnreadCount()
 
     suspend fun insertRecord(record: NotiRecord): Long = recordDao.insert(record)
@@ -44,6 +45,7 @@ class NotiRepository(
     }
 
     suspend fun getAllFiltersSync(): List<AppFilter> = filterDao.getAllFiltersSync()
+    suspend fun deleteFilter(packageName: String) = filterDao.deleteByPackageName(packageName)
     suspend fun deleteAllFilters() = filterDao.deleteAll()
     suspend fun insertAllFilters(filters: List<AppFilter>) = filterDao.insertAll(filters)
 }

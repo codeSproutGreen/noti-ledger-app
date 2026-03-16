@@ -32,6 +32,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
     val webhookEnabled by viewModel.webhookEnabled.collectAsState()
     val webhookUrl by viewModel.webhookUrl.collectAsState()
     val webhookSecret by viewModel.webhookSecret.collectAsState()
+    val deviceName by viewModel.deviceName.collectAsState()
     val collectNotifications by viewModel.collectNotifications.collectAsState()
     val collectSms by viewModel.collectSms.collectAsState()
     val smsFilterAuthOnly by viewModel.smsFilterAuthOnly.collectAsState()
@@ -124,6 +125,17 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        OutlinedTextField(
+                            value = deviceName,
+                            onValueChange = { viewModel.setDeviceName(it) },
+                            label = { Text("기기 이름") },
+                            placeholder = { Text("예: 남편폰, 아내폰") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         OutlinedTextField(
                             value = webhookUrl,
                             onValueChange = { viewModel.setWebhookUrl(it) },

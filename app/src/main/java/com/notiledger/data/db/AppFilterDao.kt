@@ -28,6 +28,9 @@ interface AppFilterDao {
     @Query("UPDATE app_filters SET lastSeen = :timestamp WHERE packageName = :packageName")
     suspend fun updateLastSeen(packageName: String, timestamp: Long)
 
+    @Query("DELETE FROM app_filters WHERE packageName = :packageName")
+    suspend fun deleteByPackageName(packageName: String)
+
     @Query("DELETE FROM app_filters")
     suspend fun deleteAll()
 

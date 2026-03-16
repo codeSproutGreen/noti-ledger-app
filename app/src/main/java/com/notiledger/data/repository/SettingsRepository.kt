@@ -24,6 +24,9 @@ class SettingsRepository(private val context: Context) {
         // SMS 수집 필터 (모두 / 인증번호만)
         val SMS_FILTER_AUTH_ONLY = booleanPreferencesKey("sms_filter_auth_only")
 
+        // 기기 이름
+        val DEVICE_NAME = stringPreferencesKey("device_name")
+
         // 서비스 상태
         val SERVICE_RUNNING = booleanPreferencesKey("service_running")
     }
@@ -52,6 +55,10 @@ class SettingsRepository(private val context: Context) {
         it[SMS_FILTER_AUTH_ONLY] ?: false
     }
 
+    val deviceName: Flow<String> = context.dataStore.data.map {
+        it[DEVICE_NAME] ?: ""
+    }
+
     val serviceRunning: Flow<Boolean> = context.dataStore.data.map {
         it[SERVICE_RUNNING] ?: false
     }
@@ -78,6 +85,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setSmsFilterAuthOnly(authOnly: Boolean) {
         context.dataStore.edit { it[SMS_FILTER_AUTH_ONLY] = authOnly }
+    }
+
+    suspend fun setDeviceName(name: String) {
+        context.dataStore.edit { it[DEVICE_NAME] = name }
     }
 
     suspend fun setServiceRunning(running: Boolean) {

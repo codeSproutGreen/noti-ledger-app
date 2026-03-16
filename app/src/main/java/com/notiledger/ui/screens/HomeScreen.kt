@@ -36,14 +36,35 @@ fun HomeScreen(viewModel: MainViewModel) {
     var showSearch by remember { mutableStateOf(false) }
     var expandedRecordId by remember { mutableStateOf<Long?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var recordToDelete by remember { mutableStateOf<NotiRecord?>(null) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(setOf<Long>()) }
 
-    Scaffold { scaffoldPadding ->
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 수동 전송 상태 스낵바
+    LaunchedEffect(uiState.manualSendStatus) {
+        uiState.manualSendStatus?.let {
+            snackbarHostState.showSnackbar(it)
+            if (it.startsWith("전송 완료") || it.startsWith("완료:")) {
+                selectionMode = false
+                selectedIds = emptySet()
+                viewModel.clearManualSendStatus()
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { scaffoldPadding ->
     Column(modifier = Modifier.fillMaxSize().padding(scaffoldPadding)) {
         // 상단 바
         TopAppBar(
             title = {
-                if (showSearch) {
+                if (selectionMode) {
+                    Text("${selectedIds.size}건 선택", fontWeight = FontWeight.Bold)
+                } else if (showSearch) {
                     OutlinedTextField(
                         value = uiState.searchQuery,
                         onValueChange = { viewModel.setSearchQuery(it) },
@@ -69,14 +90,46 @@ fun HomeScreen(viewModel: MainViewModel) {
                 }
             },
             actions = {
-                IconButton(onClick = {
-                    showSearch = !showSearch
-                    if (!showSearch) viewModel.setSearchQuery("")
-                }) {
-                    Icon(
-                        if (showSearch) Icons.Filled.Close else Icons.Filled.Search,
-                        contentDescription = "검색"
-                    )
+                if (selectionMode) {
+                    // 전체 선택
+                    IconButton(onClick = {
+                        selectedIds = if (selectedIds.size == records.size)
+                            emptySet()
+                        else records.map { it.id }.toSet()
+                    }) {
+                        Icon(Icons.Filled.SelectAll, contentDescription = "전체 선택")
+                    }
+                    // 전송
+                    IconButton(
+                        onClick = { viewModel.sendRecordsManually(selectedIds) },
+                        enabled = selectedIds.isNotEmpty()
+                    ) {
+                        Icon(Icons.Filled.Send, contentDescription = "수동 전송")
+                    }
+                    // 삭제
+                    IconButton(
+                        onClick = { showBulkDeleteDialog = true },
+                        enabled = selectedIds.isNotEmpty()
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "선택 삭제")
+                    }
+                    // 선택 취소
+                    IconButton(onClick = {
+                        selectionMode = false
+                        selectedIds = emptySet()
+                    }) {
+                        Icon(Icons.Filled.Close, contentDescription = "취소")
+                    }
+                } else {
+                    IconButton(onClick = {
+                        showSearch = !showSearch
+                        if (!showSearch) viewModel.setSearchQuery("")
+                    }) {
+                        Icon(
+                            if (showSearch) Icons.Filled.Close else Icons.Filled.Search,
+                            contentDescription = "검색"
+                        )
+                    }
                 }
             }
         )
@@ -154,9 +207,23 @@ fun HomeScreen(viewModel: MainViewModel) {
                     NotiRecordCard(
                         record = record,
                         isExpanded = expandedRecordId == record.id,
+                        isSelectionMode = selectionMode,
+                        isSelected = record.id in selectedIds,
                         onClick = {
-                            expandedRecordId = if (expandedRecordId == record.id) null else record.id
-                            if (!record.isRead) viewModel.markAsRead(record.id)
+                            if (selectionMode) {
+                                selectedIds = if (record.id in selectedIds)
+                                    selectedIds - record.id
+                                else selectedIds + record.id
+                            } else {
+                                expandedRecordId = if (expandedRecordId == record.id) null else record.id
+                                if (!record.isRead) viewModel.markAsRead(record.id)
+                            }
+                        },
+                        onLongClick = {
+                            if (!selectionMode) {
+                                selectionMode = true
+                                selectedIds = setOf(record.id)
+                            }
                         },
                         onDelete = {
                             recordToDelete = record
@@ -192,6 +259,31 @@ fun HomeScreen(viewModel: MainViewModel) {
             }
         )
     }
+    // 일괄 삭제 확인 다이얼로그
+    if (showBulkDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showBulkDeleteDialog = false },
+            title = { Text("선택 항목 삭제") },
+            text = { Text("${selectedIds.size}건의 기록을 삭제하시겠습니까?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteRecordsByIds(selectedIds)
+                        showBulkDeleteDialog = false
+                        selectionMode = false
+                        selectedIds = emptySet()
+                    }
+                ) {
+                    Text("삭제", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkDeleteDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
     } // Scaffold
 }
 
@@ -200,14 +292,18 @@ fun HomeScreen(viewModel: MainViewModel) {
 fun NotiRecordCard(
     record: NotiRecord,
     isExpanded: Boolean,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -221,6 +317,15 @@ fun NotiRecordCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (isSelectionMode) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() },
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
                 Box(
                     modifier = Modifier
                         .size(36.dp)
