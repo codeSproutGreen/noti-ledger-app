@@ -18,7 +18,8 @@ data class MainUiState(
     val selectedFilter: RecordFilter = RecordFilter.ALL,
     val backupStatus: String? = null,
     val webhookTestResult: String? = null,
-    val manualSendStatus: String? = null
+    val manualSendStatus: String? = null,
+    val presetStatus: String? = null
 )
 
 enum class RecordFilter(val label: String) {
@@ -325,6 +326,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.registerApp(pkg, name)
                 repository.setAppEnabled(pkg, enabled)
             }
+            val enabledCount = presets.count { it.value.second }
+            _uiState.update { it.copy(presetStatus = "${enabledCount}개 금융앱 프리셋이 추가되었습니다") }
         }
+    }
+
+    fun clearPresetStatus() {
+        _uiState.update { it.copy(presetStatus = null) }
     }
 }

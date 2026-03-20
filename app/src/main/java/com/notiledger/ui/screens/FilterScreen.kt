@@ -24,9 +24,21 @@ import com.notiledger.util.FinanceApps
 @Composable
 fun FilterScreen(viewModel: MainViewModel) {
     val filters by viewModel.appFilters.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     var filterToDelete by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    LaunchedEffect(uiState.presetStatus) {
+        uiState.presetStatus?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearPresetStatus()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
         TopAppBar(
             title = {
                 Column {
@@ -131,7 +143,8 @@ fun FilterScreen(viewModel: MainViewModel) {
                 }
             }
         }
-    }
+    } // Column
+    } // Scaffold
 
     // 삭제 확인 다이얼로그
     filterToDelete?.let { pkg ->
