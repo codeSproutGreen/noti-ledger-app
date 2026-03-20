@@ -303,6 +303,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 "com.lottemembers.android" to Pair("L.pay", true),
                 "com.kftc.bankpay.android" to Pair("뱅크페이", true),
                 "kvp.jjy.MispAndroid320" to Pair("ISP/페이북", true),
+                // 카드
+                "com.hyundaicard.appcard" to Pair("현대카드", true),
+                "com.shinhancard.smartshinhan" to Pair("신한카드", true),
+                "com.kbcard.cxh.appcard" to Pair("KB국민카드", true),
+                "com.lottecard.lottesmartpay" to Pair("롯데카드", true),
+                "com.samsungcard.mpocket" to Pair("삼성카드", true),
+                "kr.co.bccard.vp" to Pair("BC카드", true),
                 // 노이즈 앱 (기본 비활성화)
                 "com.kakao.talk" to Pair("카카오톡", false),
                 "com.android.systemui" to Pair("시스템 UI", false),

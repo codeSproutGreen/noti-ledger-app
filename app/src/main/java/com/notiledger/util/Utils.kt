@@ -54,7 +54,13 @@ object FinanceApps {
         "com.ssg.serviceapp.android.egiftcertificate" to "SSG페이",
         "com.lottemembers.android" to "L.pay",
         "com.kftc.bankpay.android" to "뱅크페이",
-        "kvp.jjy.MispAndroid320" to "ISP/페이북"
+        "kvp.jjy.MispAndroid320" to "ISP/페이북",
+        "com.hyundaicard.appcard" to "현대카드",
+        "com.shinhancard.smartshinhan" to "신한카드",
+        "com.kbcard.cxh.appcard" to "KB국민카드",
+        "com.lottecard.lottesmartpay" to "롯데카드",
+        "com.samsungcard.mpocket" to "삼성카드",
+        "kr.co.bccard.vp" to "BC카드"
     )
 
     fun isFinanceApp(packageName: String): Boolean {
@@ -63,6 +69,7 @@ object FinanceApps {
             packageName.contains("pay", ignoreCase = true) ||
             packageName.contains("securities", ignoreCase = true) ||
             packageName.contains("stock", ignoreCase = true) ||
-            packageName.contains("insurance", ignoreCase = true)
+            packageName.contains("insurance", ignoreCase = true) ||
+            packageName.contains("card", ignoreCase = true)
     }
 }
