@@ -311,14 +311,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 "com.lottecard.lottesmartpay" to Pair("롯데카드", true),
                 "com.samsungcard.mpocket" to Pair("삼성카드", true),
                 "kr.co.bccard.vp" to Pair("BC카드", true),
+                // 메시지 앱 (RCS 금융문자 캡처용)
+                "com.samsung.android.messaging" to Pair("메시지", true),
+                "com.google.android.apps.messaging" to Pair("Google 메시지", true),
                 // 노이즈 앱 (기본 비활성화)
                 "com.kakao.talk" to Pair("카카오톡", false),
                 "com.android.systemui" to Pair("시스템 UI", false),
                 "android" to Pair("Android 시스템", false),
                 "com.samsung.android.incallui" to Pair("전화", false),
-                "com.samsung.android.messaging" to Pair("메시지", false),
                 "com.google.android.gm" to Pair("Gmail", false),
-                "com.google.android.apps.messaging" to Pair("Google 메시지", false),
             )
 
             for ((pkg, info) in presets) {

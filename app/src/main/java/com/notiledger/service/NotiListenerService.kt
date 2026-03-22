@@ -61,15 +61,39 @@ class NotiListenerService : NotificationListenerService() {
 
                 // 금융 키워드 필터: 관련 문구 없으면 무시
                 val combined = "$title $content"
-                val financeKeywords = listOf("승인", "출금", "입금", "결제", "이체")
+                val financeKeywords = listOf("승인", "출금", "입금", "결제", "이체", "취소")
                 if (financeKeywords.none { combined.contains(it) }) return@launch
 
+                // 금액 정보(n원)가 없는 메시지는 무시
+                if (!Regex("\\d[\\d,]*원").containsMatchIn(combined)) return@launch
+
+                // 메시지 앱인 경우: 금융사 이름 추출 + SMS 중복 체크
+                val isMessaging = FinanceApps.isMessagingApp(sbn.packageName)
+                if (isMessaging) {
+                    // 같은 내용이 SMS로 이미 저장됐으면 중복 무시
+                    val dupWindow = 60_000L // 1분
+                    if (repository.hasDuplicate(content, sbn.postTime - dupWindow, sbn.postTime + dupWindow)) {
+                        Log.d(TAG, "Skipping duplicate (already saved as SMS): ${content.take(30)}")
+                        return@launch
+                    }
+                }
+
                 // 앱 이름 가져오기
-                val appName = try {
-                    val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
-                    packageManager.getApplicationLabel(appInfo).toString()
-                } catch (e: PackageManager.NameNotFoundException) {
-                    sbn.packageName
+                val appName = if (isMessaging) {
+                    // 메시지 앱이면 내용에서 금융사 이름 추출
+                    FinanceApps.extractFinanceName(content) ?: try {
+                        val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
+                        packageManager.getApplicationLabel(appInfo).toString()
+                    } catch (e: PackageManager.NameNotFoundException) {
+                        sbn.packageName
+                    }
+                } else {
+                    try {
+                        val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
+                        packageManager.getApplicationLabel(appInfo).toString()
+                    } catch (e: PackageManager.NameNotFoundException) {
+                        sbn.packageName
+                    }
                 }
 
                 // 앱을 필터 목록에 등록 (처음 보는 앱이면)
@@ -77,7 +101,7 @@ class NotiListenerService : NotificationListenerService() {
 
                 // DB에 저장
                 val record = NotiRecord(
-                    type = "NOTIFICATION",
+                    type = if (isMessaging) "SMS" else "NOTIFICATION",
                     source = sbn.packageName,
                     sourceName = appName,
                     title = title,

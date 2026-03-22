@@ -55,6 +55,9 @@ interface NotiRecordDao {
     @Query("UPDATE noti_records SET webhookSent = 1 WHERE id = :id")
     suspend fun markWebhookSent(id: Long)
 
+    @Query("SELECT COUNT(*) FROM noti_records WHERE content = :content AND timestamp BETWEEN :from AND :to")
+    suspend fun countDuplicates(content: String, from: Long, to: Long): Int
+
     // 백업용: 전체 데이터를 한번에 가져오기
     @Query("SELECT * FROM noti_records ORDER BY timestamp ASC")
     suspend fun getAllRecordsSync(): List<NotiRecord>

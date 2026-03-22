@@ -27,6 +27,8 @@ class NotiRepository(
     suspend fun getAllRecordsSync(): List<NotiRecord> = recordDao.getAllRecordsSync()
     suspend fun insertAllRecords(records: List<NotiRecord>) = recordDao.insertAll(records)
     suspend fun getRecordCount(): Int = recordDao.getCount()
+    suspend fun hasDuplicate(content: String, from: Long, to: Long): Boolean =
+        recordDao.countDuplicates(content, from, to) > 0
 
     // ── Filters ──
     fun getAllFilters(): Flow<List<AppFilter>> = filterDao.getAllFilters()

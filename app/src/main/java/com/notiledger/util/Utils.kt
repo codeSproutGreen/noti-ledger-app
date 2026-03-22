@@ -60,7 +60,33 @@ object FinanceApps {
         "com.kbcard.cxh.appcard" to "KB국민카드",
         "com.lottecard.lottesmartpay" to "롯데카드",
         "com.samsungcard.mpocket" to "삼성카드",
-        "kr.co.bccard.vp" to "BC카드"
+        "kr.co.bccard.vp" to "BC카드",
+        // 메시지 앱 (RCS 등 SMS 브로드캐스트로 수신되지 않는 금융 문자 캡처용)
+        "com.samsung.android.messaging" to "메시지",
+        "com.google.android.apps.messaging" to "Google 메시지"
+    )
+
+    private val MESSAGING_APPS = setOf(
+        "com.samsung.android.messaging",
+        "com.google.android.apps.messaging"
+    )
+
+    /** 메시지 내용에서 금융사를 추출하기 위한 매핑 (접두어 → 표시명) */
+    private val FINANCE_PREFIXES = listOf(
+        "삼성" to "삼성카드",
+        "신한" to "신한카드",
+        "현대" to "현대카드",
+        "KB" to "KB국민카드",
+        "국민" to "KB국민카드",
+        "롯데" to "롯데카드",
+        "BC" to "BC카드",
+        "하나" to "하나카드",
+        "우리" to "우리카드",
+        "NH" to "NH카드",
+        "IBK" to "IBK기업은행",
+        "카카오뱅크" to "카카오뱅크",
+        "케이뱅크" to "케이뱅크",
+        "토스" to "토스"
     )
 
     fun isFinanceApp(packageName: String): Boolean {
@@ -71,5 +97,16 @@ object FinanceApps {
             packageName.contains("stock", ignoreCase = true) ||
             packageName.contains("insurance", ignoreCase = true) ||
             packageName.contains("card", ignoreCase = true)
+    }
+
+    fun isMessagingApp(packageName: String): Boolean = packageName in MESSAGING_APPS
+
+    /** 메시지 앱 알림의 내용에서 실제 금융사 이름을 추출 */
+    fun extractFinanceName(content: String): String? {
+        val trimmed = content.trimStart()
+        for ((prefix, name) in FINANCE_PREFIXES) {
+            if (trimmed.startsWith(prefix, ignoreCase = true)) return name
+        }
+        return null
     }
 }
